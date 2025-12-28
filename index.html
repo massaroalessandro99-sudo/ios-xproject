@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamFinder - Search & Stream</title>
+    <meta name="description"
+        content="Search movies and TV shows, then stream them instantly via Stremio or web players.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-card: #1a1a1a;
+            --accent: #e50914;
+            --accent-hover: #ff2832;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --border: #2a2a2a;
+            --success: #46d369;
+            --warning: #f5c518;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.9) 0%, transparent 100%);
+            padding: 20px 40px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #ff6b6b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo span {
+            font-weight: 300;
+            opacity: 0.7;
+        }
+
+        .account-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            /* gap: 8px; replaced with margin on child */
+            transition: var(--transition);
+        }
+        .account-btn > *:not(:last-child) { margin-right: 8px; }
+
+        .account-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Hero */
+        .hero {
+            min-height: 50vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 20px 60px;
+            text-align: center;
+            background: radial-gradient(ellipse at top, rgba(229, 9, 20, 0.15) 0%, transparent 60%);
+        }
+
+        .hero h1 {
+            font-size: max(2rem, min(5vw, 3.5rem));
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 500px;
+            margin-bottom: 40px;
+        }
+
+        /* Search */
+        .search-wrapper {
+            display: flex;
+            background: var(--bg-secondary);
+            padding: 8px;
+            border-radius: 50px;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            z-index: 20;
+        }
+        .search-wrapper > *:not(:last-child) { margin-right: 12px; }
+
+        .search-wrapper:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.2);
+        }
+
+        .type-select {
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--bg-card);
+            border: none;
+            color: var(--text-primary);
+            padding: 12px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .search-input {
+            -webkit-appearance: none;
+            appearance: none;
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1rem;
+            padding: 12px 16px;
+            outline: none;
+        }
+
+        .search-btn {
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--accent);
+            border: none;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            /* Ensure clickable */
+            z-index: 10;
+        }
+
+        .search-btn:hover {
+            background: var(--accent-hover);
+            transform: scale(1.02);
+        }
+
+        .search-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+
+        /* Results */
+        .results-section {
+            padding: 0 40px 80px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            overflow: hidden;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--shadow);
+        }
+
+        .poster-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 150%; /* aspect-ratio 2/3 */
+            background: var(--bg-secondary);
+            overflow: hidden;
+        }
+
+        .poster {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .poster.no-image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-info {
+            padding: 12px;
+        }
+
+        .card-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-meta {
+            display: flex;
+            /* gap: 8px; */
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .card-meta > *:not(:last-child) { margin-right: 8px; }
+
+        .card-rating {
+            color: var(--warning);
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            position: fixed;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-backdrop.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            /* gap: 24px; */
+            padding: 24px;
+            background: var(--bg-card);
+        }
+        .modal-header > *:not(:last-child) { margin-right: 24px; }
+
+        .modal-poster {
+            width: 150px;
+            border-radius: var(--radius-sm);
+            flex-shrink: 0;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .stream-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .stream-btn {
+            display: flex;
+            align-items: center;
+            /* gap: 12px; */
+            padding: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .stream-btn > *:not(:last-child) { margin-right: 12px; }
+
+        .stream-btn:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent);
+        }
+
+        .stream-btn.stremio {
+            border-color: #8a5cf5;
+            background: linear-gradient(135deg, rgba(138, 92, 245, 0.2), transparent);
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .modal-header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .modal-header > *:not(:last-child) { margin-right: 0; margin-bottom: 24px; }
+
+            .search-wrapper {
+                flex-wrap: wrap;
+            }
+            .search-wrapper > * {
+                margin-bottom: 12px;
+            }
+            .search-wrapper > *:last-child {
+                margin-bottom: 0px;
+            }
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: white;
+            border-radius: var(--radius-sm);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo" onclick="window.location.href=window.location.pathname" style="cursor: pointer;">Stream<span>Finder</span></div>
+        <button class="account-btn" onclick="openAccountModal()">
+            <span class="icon">🔑</span>
+            <span class="text">Stremio Account</span>
+        </button>
+    </header>
+
+    <section class="hero">
+        <h1>Find & Stream Anything</h1>
+        <p>Search millions of movies and TV shows, then open them directly in Stremio or your favorite player.</p>
+        <div class="search-wrapper">
+            <select id="typeSelect" class="type-select">
+                <option value="movie">🎬 Movie</option>
+                <option value="tv">📺 TV Show</option>
+            </select>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search for a title..."
+                autocomplete="off">
+            <button id="searchBtn" class="search-btn">Search</button>
+        </div>
+    </section>
+
+    <section class="results-section">
+        <div id="resultsGrid" class="results-grid"></div>
+    </section>
+
+    <!-- Account Modal -->
+    <div id="accountModal" class="modal-backdrop">
+        <div class="modal" style="max-width: 500px;">
+            <button class="close-btn" onclick="closeAccountModal()">✕</button>
+            <div class="modal-header" style="flex-direction: column;">
+                <h2 style="margin-bottom: 12px;">🟣 Stremio Login</h2>
+                <p>Login to enable authenticated Direct Streams.</p>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 16px;">
+                    <label>Email</label>
+                    <input type="email" id="stremioEmail" placeholder="email">
+                </div>
+                <div>
+                    <label>Password</label>
+                    <input type="password" id="stremioPassword" placeholder="password">
+                </div>
+                <button id="recoverTokenBtn" class="search-btn" style="width: 100%; margin-top: 24px;"
+                    onclick="doLogin()">Login</button>
+                <div id="tokenResult"
+                    style="margin-top: 16px; display: none; word-break: break-all; color: var(--success);"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movie Modal -->
+    <div id="modal" class="modal-backdrop">
+        <div class="modal">
+            <button class="close-btn" onclick="closeModal()">✕</button>
+            <div class="modal-header">
+                <img id="modalPoster" class="modal-poster" src="" alt="">
+                <div class="modal-info">
+                    <h2 id="modalTitle"></h2>
+                    <div class="card-meta" id="modalMeta"></div>
+                    <p id="modalOverview" style="margin-top: 12px; font-size: 0.9rem; color: #ccc;"></p>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="episodeSelector" style="display: none; margin-bottom: 24px;">
+                    <input type="number" id="seasonInput" min="1" value="1" placeholder="Season"
+                        style="width: 80px; padding: 8px; margin-right: 12px;">
+                    <input type="number" id="episodeInput" min="1" value="1" placeholder="Ep"
+                        style="width: 80px; padding: 8px;">
+                </div>
+
+                <div class="stream-grid" id="stremioLinks"></div>
+                <h3 style="margin: 24px 0 12px;">Web Players</h3>
+                <div class="stream-grid" id="webLinks"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stream Selection Modal -->
+    <div id="streamSelectionModal" class="modal-backdrop">
+        <div class="modal" style="max-width: 400px;">
+            <button class="close-btn" onclick="closeStreamModal()">✕</button>
+            <div class="modal-header">
+                <h2>Select Stream</h2>
+            </div>
+            <div class="modal-body">
+                <div id="streamList" class="stream-grid" style="grid-template-columns: 1fr;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('StreamFinder iOS Load');
+        
+        // Safe Storage for Private Mode
+        const storage = {
+            getItem: function(k) { try { return localStorage.getItem(k); } catch(e) { return null; } },
+            setItem: function(k, v) { try { localStorage.setItem(k, v); } catch(e) {} },
+            removeItem: function(k) { try { localStorage.removeItem(k); } catch(e) {} }
+        };
+
+        // CONFIG
+        const TMDB_KEY = 'e0f8c3121386db3c0c8a93f2da63804f'; 
+        const IMG_BASE = 'https://image.tmdb.org/t/p/w342';
+
+        let currentItem = null;
+        let authKey = storage.getItem('stremio_authKey');
+
+        // Search
+        // Search Logic
+        async function performSearch(query, type) {
+            try {
+                const res = await fetch(`https://api.themoviedb.org/3/search/${type}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                return data.results || [];
+            } catch (e) { console.error('Search error:', e); return []; }
+        }
+
+        document.getElementById('searchBtn').addEventListener('click', async function(e) {
+            if (e) e.preventDefault();
+            const query = document.getElementById('searchInput').value;
+            const type = document.getElementById('typeSelect').value;
+            if (!query) return;
+
+            const results = await performSearch(query, type);
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = '';
+            
+            if(results.length === 0) {
+                grid.innerHTML = '<p style="color:#aaa; grid-column: 1 / -1;">No results found.</p>';
+                return;
+            }
+
+            results.forEach(function(item) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                const title = item.title || item.name;
+                const year = (item.release_date || item.first_air_date || '').split('-')[0];
+                const img = item.poster_path ? IMG_BASE + item.poster_path : '';
+
+                card.innerHTML = '<div class="poster-wrapper">' +
+                    (img ? '<img src="' + img + '" class="poster">' : '<div class="poster no-image">No Image</div>') +
+                    '</div>' +
+                    '<div class="card-info">' +
+                    '<div class="card-title">' + title + '</div>' +
+                    '<div class="card-meta"><span>' + year + '</span><span>⭐ ' + (item.vote_average ? item.vote_average.toFixed(1) : 'N/A') + '</span></div>' +
+                    '</div>';
+                
+                card.onclick = function() {
+                    const mType = (item.media_type && item.media_type !== 'multi') ? item.media_type : type;
+                    openModal(item, mType);
+                };
+                grid.appendChild(card);
+            });
+        });
+
+        // ROUTING / DEEP LINKING
+        async function handleRouting() {
+            // 1. Check for 404 Redirect Param
+            let route = new URLSearchParams(window.location.search).get('route');
+            
+            // 2. Check for Hash (Localhost / Direct support)
+            // e.g. index.html#/breaking-bad/season-1/episode-1
+            if (!route && window.location.hash) {
+                route = window.location.hash.substring(1); // Remove '#'
+            }
+            
+            if (route && route !== '/') {
+                // e.g. /how-i-met-your-mother/season-1/episode-1
+                let cleanRoute = route.startsWith('/') ? route.substring(1) : route;
+                const parts = cleanRoute.split('/');
+                
+                if (parts.length > 0 && parts[0]) {
+                    const slug = parts[0];
+                    const query = slug.replace(/-/g, ' ');
+                    
+                    // Heuristic: If 'season' is in path, assume TV
+                    const isTv = cleanRoute.includes('season-');
+                    const type = isTv ? 'tv' : 'multi';
+                    
+                    console.log('Routing to:', query, type);
+                    
+                    const results = await performSearch(query, type);
+                    
+                    if (results.length > 0) {
+                        const item = results[0];
+                        const itemType = item.media_type === 'movie' || item.media_type === 'tv' ? item.media_type : (item.first_air_date ? 'tv' : 'movie');
+                        
+                        await openModal(item, itemType);
+                        
+                        // Handle S/E
+                        if (itemType === 'tv') {
+                            let s = 1, e = 1;
+                            const sPart = parts.find(p => p.startsWith('season-'));
+                            if (sPart) s = parseInt(sPart.replace('season-', '')) || 1;
+                            
+                            const ePart = parts.find(p => p.startsWith('episode-'));
+                            if (ePart) e = parseInt(ePart.replace('episode-', '')) || 1;
+                            
+                            document.getElementById('seasonInput').value = s;
+                            document.getElementById('episodeInput').value = e;
+                            updateLinks();
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Call on load
+        handleRouting();
+
+
+
+        async function openModal(item, type) {
+            currentItem = { ...item, type };
+            document.getElementById('modalTitle').textContent = item.title || item.name;
+            document.getElementById('modalOverview').textContent = item.overview;
+            document.getElementById('modalPoster').src = item.poster_path ? 'https://image.tmdb.org/t/p/w500' + item.poster_path : '';
+
+            document.getElementById('episodeSelector').style.display = type === 'tv' ? 'flex' : 'none';
+            document.getElementById('modal').classList.add('active');
+
+            updateLinks();
+
+            // Listen for episode changes
+            document.getElementById('seasonInput').onchange = updateLinks;
+            document.getElementById('episodeInput').onchange = updateLinks;
+        }
+
+        async function updateLinks() {
+            if (!currentItem) return;
+            const type = currentItem.type;
+            const id = currentItem.id;
+            const season = document.getElementById('seasonInput').value;
+            const episode = document.getElementById('episodeInput').value;
+
+            // Get IMDB ID
+            let imdbId = null;
+            try {
+                const res = await fetch(`https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${TMDB_KEY}`);
+                const data = await res.json();
+                imdbId = data.imdb_id;
+            } catch (e) { }
+
+            const stremioContainer = document.getElementById('stremioLinks');
+            if (imdbId) {
+                const stremioLink = type === 'movie'
+                    ? `stremio://detail/movie/${imdbId}`
+                    : `stremio://detail/series/${imdbId}/${season}/${episode}`;
+
+                const webLink = type === 'movie'
+                    ? `https://web.stremio.com/#/detail/movie/${imdbId}`
+                    : `https://web.stremio.com/#/detail/series/${imdbId}/${season}/${episode}`;
+
+                stremioContainer.innerHTML = `
+                    <a href="${stremioLink}" class="stream-btn stremio">🟣 App</a>
+                    <a href="${webLink}" target="_blank" class="stream-btn stremio">🌐 Web</a>
+                `;
+            }
+
+            // Web Links (Embeds)
+            const webContainer = document.getElementById('webLinks');
+            const embeds = [
+                { name: 'VixSrc', url: type === 'movie' ? `https://vixsrc.to/movie/${id}` : `https://vixsrc.to/tv/${id}/${season}/${episode}` },
+                { name: 'VidSrc.to', url: type === 'movie' ? `https://vidsrc.to/embed/movie/${id}` : `https://vidsrc.to/embed/tv/${id}/${season}/${episode}` },
+                { name: 'Direct Play', id: 'scanBtn', action: true, prefer: 'vix' },
+                { name: 'Torrentio', id: 'guardaBtn', action: true, prefer: 'guarda' },
+                { name: '🦄 StreamVix', id: 'vixBtn', action: true, prefer: 'vix-auth' }
+            ];
+
+            webContainer.innerHTML = embeds.map(s => {
+                if (s.action) return `<a id="${s.id}" href="#" class="stream-btn" onclick="scanWebStreamr(this, '${imdbId}', '${season}', '${episode}', '${s.prefer}'); return false;">🚀 ${s.name}</a>`;
+                return `<a href="${s.url}" target="_blank" class="stream-btn">▶️ ${s.name}</a>`;
+            }).join('');
+            
+            // Update Watched Status UI
+            updateEpisodeDisplay();
+        }
+
+        // Event Listeners for Episode Change
+        document.getElementById('seasonInput').addEventListener('change', () => { updateLinks(); });
+        document.getElementById('episodeInput').addEventListener('change', () => { updateLinks(); });
+
+        // WATCHED STATUS & VISUALS
+        function getWatchedKey(id, s, e) { return `watched_${id}_${s}_${e}`; }
+        
+        function markAsWatched() {
+            if (!currentItem || currentItem.type !== 'tv') return;
+            const s = document.getElementById('seasonInput').value;
+            const e = document.getElementById('episodeInput').value;
+            const key = getWatchedKey(currentItem.id, s, e);
+            storage.setItem(key, 'true');
+            updateEpisodeDisplay();
+        }
+
+        function toggleWatched() {
+            if (!currentItem || currentItem.type !== 'tv') return;
+            const s = document.getElementById('seasonInput').value;
+            const e = document.getElementById('episodeInput').value;
+            const key = getWatchedKey(currentItem.id, s, e);
+            
+            if (storage.getItem(key) === 'true') {
+                storage.removeItem(key);
+            } else {
+                storage.setItem(key, 'true');
+            }
+            updateEpisodeDisplay();
+        }
+
+        function isWatched(s, e) {
+            if (!currentItem) return false;
+            return storage.getItem(getWatchedKey(currentItem.id, s, e)) === 'true';
+        }
+
+        async function updateEpisodeDisplay() {
+            if (!currentItem || currentItem.type !== 'tv') {
+                const existing = document.getElementById('episodeInfo');
+                if(existing) existing.style.display = 'none';
+                return;
+            }
+            
+            // Create container if missing
+            let infoDiv = document.getElementById('episodeInfo');
+            if (!infoDiv) {
+                infoDiv = document.createElement('div');
+                infoDiv.id = 'episodeInfo';
+                infoDiv.style.marginTop = '20px';
+                document.getElementById('webLinks').parentNode.insertBefore(infoDiv, document.getElementById('webLinks'));
+            }
+            
+            const s = document.getElementById('seasonInput').value;
+            const e = document.getElementById('episodeInput').value;
+            const watched = isWatched(s, e);
+            
+            let title = `Episode ${e}`;
+            let overview = '';
+            
+            try {
+                const res = await fetch(`https://api.themoviedb.org/3/tv/${currentItem.id}/season/${s}/episode/${e}?api_key=${TMDB_KEY}`);
+                const data = await res.json();
+                if (data.name) title = data.name;
+                if (data.overview) overview = data.overview;
+            } catch(e) {}
+
+            infoDiv.style.display = 'block';
+            infoDiv.innerHTML = 
+                '<div style="margin-bottom:15px; padding:15px; background:' + (watched ? 'rgba(70, 211, 105, 0.15)' : 'rgba(255,255,255,0.05)') + '; border-radius:10px; border:1px solid ' + (watched ? '#46d369' : '#444') + '; transition: all 0.3s ease;">' +
+                    '<div style="font-size:1.2em; font-weight:bold; color:' + (watched ? '#46d369' : '#fff') + '; display:flex; align-items:center; justify-content:space-between;">' +
+                        '<div style="display:flex; align-items:center;">' +
+                            '<span style="margin-right:10px;">' + (watched ? '✅' : '📺') + '</span>' +
+                            '<span style="margin-right:10px;">' + title + '</span>' +
+                            (watched ? '<span style="font-size:0.6em; background:#46d369; color:#000; padding:2px 8px; border-radius:10px; font-weight:bold;">WATCHED</span>' : '') +
+                        '</div>' +
+                        '<button onclick="toggleWatched()" style="background:rgba(255,255,255,0.1); border:1px solid #666; color:#ddd; cursor:pointer; padding:5px 12px; border-radius:5px; font-size:0.7em; transition:0.2s;">' +
+                            (watched ? '❌ Unwatch' : '👁️ Mark Watched') +
+                        '</button>' +
+                    '</div>' +
+                    '<div style="font-size:0.9em; color:#bbb; margin-top:8px; line-height:1.4;">' + (overview || 'No description available.') + '</div>' +
+                '</div>';
+        }
+        
+        // CLIPBOARD HELPER
+        function copyToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed"; 
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                const successful = document.execCommand('copy');
+                alert(successful ? 'Magnet/Link Copied!' : 'Copy Failed');
+            } catch (err) {
+                alert('Copy Error: ' + err);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // Helper to fetch with multiple CORS proxies
+        async function fetchWithProxy(targetUrl) {
+            const proxies = [
+                url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
+            ];
+
+            for (const createProxy of proxies) {
+                try {
+                    const proxyUrl = createProxy(targetUrl);
+                    const res = await fetch(proxyUrl);
+                    if (!res.ok) continue;
+                    
+                    const text = await res.text();
+                    
+                    // AllOrigins wraps in JSON
+                    if (proxyUrl.includes('allorigins')) {
+                        const json = JSON.parse(text);
+                        return JSON.parse(json.contents);
+                    }
+                    
+                    // Others return direct body
+                    return JSON.parse(text);
+                } catch (e) {
+                    // console.warn('Proxy try failed', e);
+                }
+            }
+            throw new Error('All proxies failed');
+        }
+
+        async function scanWebStreamr(btn, imdbId, season, episode, prefer) {
+            if (!imdbId) { btn.textContent = 'No IMDB ID'; return; }
+            const originalText = btn.textContent;
+            btn.textContent = 'Scanning...';
+            
+            // Mark as Watched
+            if (currentItem.type === 'tv' || currentItem.type === 'series') {
+                markAsWatched();
+            }
+
+            const logs = [];
+            const addLog = (msg) => { console.log(msg); logs.push(msg); };
+
+            const type = currentItem.type === 'movie' ? 'movie' : 'series';
+            const sID = type === 'movie' ? imdbId : `${imdbId}:${season}:${episode}`;
+            const typeStr = (type === 'movie' ? 'movie' : 'series');
+            
+            // -----------------------------
+            // STREAMVIX AUTHENTICATED SCAN (New Request)
+            // -----------------------------
+            if (prefer === 'vix-auth') {
+                addLog('🔐 Authenticating for Stremio Account...');
+                let authKey = storage.getItem('stremio_authKey');
+
+                try {
+                    // 1. Try Hardcoded Login if no key
+                    if (!authKey) {
+                        try {
+                            const loginRes = await fetch('https://api.strem.io/api/login', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    email: 'massaro.alessandro99@gmail.com', 
+                                    password: 'alessandro2005',
+                                    type: 'Auth'
+                                })
+                            });
+                            const loginData = await loginRes.json();
+                            if (loginData.result && loginData.result.authKey) {
+                                authKey = loginData.result.authKey;
+                                storage.setItem('stremio_authKey', authKey);
+                                addLog('✅ Login Success');
+                            }
+                        } catch (e) { console.error(e); }
+                    }
+
+                    // 2. Fallback: Manual Key
+                    if (!authKey) {
+                         const manualKey = prompt("Login failed. Paste Stremio AuthKey:");
+                         if (manualKey) {
+                             authKey = manualKey;
+                             storage.setItem('stremio_authKey', manualKey);
+                         } else {
+                             throw new Error('No Auth Key');
+                         }
+                    }
+                    
+                    // 3. Get ALL User Addons
+                    const addonsRes = await fetch('https://api.strem.io/api/addonCollectionGet', {
+                        method: 'POST',
+                        body: JSON.stringify({ type: 'AddonCollectionGet', authKey: authKey, update: true })
+                    });
+                    const addonsData = await addonsRes.json();
+                    const addons = (addonsData.result && addonsData.result.addons) || [];
+                    
+                    // 4. Filter for ANY stream provider (Broad Scan)
+                    const streamAddons = addons.filter(a => 
+                        a.transportUrl && 
+                        (a.manifest && a.manifest.resources || []).includes('stream')
+                    );
+                    
+                    if (streamAddons.length === 0) throw new Error('No Stream Addons Found');
+                    
+                    addLog(`🔍 Scanning ${streamAddons.length} Account Addons...`);
+                    
+                    // 5. Scan All in Parallel
+                    const promises = streamAddons.map(async (addon) => {
+                        const tUrl = (addon.transportUrl || '').replace('/manifest.json', '');
+                        const url = tUrl + '/stream/' + typeStr + '/' + encodeURIComponent(sID) + '.json';
+                        try {
+                            const d = await fetchWithProxy(url);
+                            if (d && d.streams && d.streams.length > 0) {
+                                return d.streams.map(s => {
+                                    s.originInfo = (addon.manifest && addon.manifest.name) || 'Account Addon';
+                                    return s;
+                                });
+                            }
+                        } catch (e) {}
+                        return [];
+                    });
+                    
+                    const results = await Promise.all(promises);
+                    const allFound = [].concat.apply([], results);
+                    
+                    if (allFound.length > 0) {
+                        // 6. smart Selection: Prioritize "sweetpixel" or "vix"
+                        let bestMatch = allFound.find(s => (s.url||'').indexOf('sweetpixel') !== -1);
+                        if (!bestMatch) bestMatch = allFound.find(s => (s.name||'').toLowerCase().indexOf('vix') !== -1);
+                        if (!bestMatch) bestMatch = allFound[0]; // Fallback to first found
+                        
+                        btn.href = bestMatch.url || bestMatch.externalUrl; // Handle external/magnet if needed
+                        btn.onclick = null;
+                        btn.target = '_blank';
+                        btn.textContent = '🦄 Play Found';
+                        btn.style.borderColor = '#e5a00d'; 
+                        btn.style.color = '#e5a00d';
+                        return;
+                    } 
+                    
+                    btn.textContent = 'Zero Streams';
+                    
+                } catch (e) {
+                    console.error('Scan Error:', e);
+                    btn.textContent = 'Error';
+                    // Retry prompt on fatal error
+                     setTimeout(() => {
+                        if(confirm("Scan Error: " + e.message + "\n\nTry resetting Auth?")) {
+                             storage.removeItem('stremio_authKey');
+                        }
+                    }, 500);
+                }
+                
+                setTimeout(() => btn.textContent = originalText, 3000);
+                return;
+            }
+
+            // -----------------------------
+            // DIRECT PLAY (Public VixSrc)
+            // -----------------------------
+            if (prefer === 'vix') {
+                const config = 'eyJpdCI6dHJ1ZSwibXVsdGkiOnRydWV9';
+                const url = 'https://webstreamr.hayd.uk/' + config + '/stream/' + typeStr + '/' + encodeURIComponent(sID) + '.json';
+                try {
+                    const data = await fetchWithProxy(url);
+                    if (data && data.streams) {
+                         const stream = (data.streams.find(s => s.name && s.name.indexOf('VixSrc') !== -1)) || data.streams[0];
+                         if (stream) {
+                            btn.href = stream.url;
+                            btn.onclick = null;
+                            btn.target = '_blank';
+                            btn.textContent = '🚀 Direct Play';
+                            btn.style.borderColor = '#46d369';
+                            return;
+                         }
+                    }
+                } catch (e) { console.error(e); }
+                btn.textContent = 'Not Found';
+                setTimeout(() => btn.textContent = originalText, 3000);
+                return;
+            }
+
+            // -----------------------------
+            // GUARDA SERIE / MULTI-PROVIDER SCAN
+            // -----------------------------
+            if (prefer === 'guarda') {
+                 addLog('🚀 Starting Torrentio Scan...');
+
+                    const providers = [
+                        { name: 'Torrentio', url: 'https://torrentio.strem.fun/stream/' + typeStr + '/' + encodeURIComponent(sID) + '.json' },
+                        { name: 'WeebStreamr', url: 'https://webstreamr.hayd.uk/eyJpdCI6dHJ1ZSwibXVsdGkiOnRydWV9/stream/' + typeStr + '/' + encodeURIComponent(sID) + '.json' },
+                        { name: 'Superflix', url: 'https://superflix.strem.fun/stream/' + typeStr + '/' + encodeURIComponent(sID) + '.json' }
+                    ];
+
+                    const currentAuth = storage.getItem('stremio_authKey');
+                    if (currentAuth) {
+                        try {
+                            const addonsRes = await fetch('https://api.strem.io/api/addonCollectionGet', {
+                                method: 'POST',
+                                body: JSON.stringify({ type: 'AddonCollectionGet', authKey: currentAuth, update: true })
+                            });
+                            const addonsData = await addonsRes.json();
+                            const installed = (addonsData.result && addonsData.result.addons) || [];
+                            
+                            installed.filter(a => a.transportUrl && (a.manifest && a.manifest.resources || []).indexOf('stream') !== -1).forEach(a => {
+                                const tUrl = (a.transportUrl || '').replace('/manifest.json', '');
+                                providers.push({ 
+                                    name: (a.manifest && a.manifest.name) || 'User Addon', 
+                                    url: tUrl + '/stream/' + typeStr + '/' + encodeURIComponent(sID) + '.json'
+                                });
+                            });
+                            addLog('✅ Added account addons.');
+                        } catch (e) { console.warn(e); }
+                    }
+
+                    const promises = providers.map(async (p) => {
+                        try {
+                            const d = await fetchWithProxy(p.url);
+                            if (d && d.streams && d.streams.length > 0) {
+                                return d.streams.map(s => {
+                                    s.source = p.name;
+                                    s.name = s.name || p.name;
+                                    return s;
+                                });
+                            }
+                        } catch (e) {}
+                        return [];
+                    });
+
+                    const results = await Promise.all(promises);
+                    const allStreams = [].concat.apply([], results);
+                    const validStreams = allStreams.filter(s => {
+                        const content = ((s.name||'')+(s.title||'')).toLowerCase();
+                        return content.indexOf('error') === -1;
+                    });
+                    
+                    const unique = [];
+                    const seen = new Set();
+                    validStreams.forEach(s => {
+                        const key = s.url || s.infoHash || s.externalUrl || Math.random();
+                        if (!seen.has(key)) { seen.add(key); unique.push(s); }
+                    });
+
+                    // Sort
+                    unique.sort((a, b) => {
+                        const score = (s) => (s && s.source && s.source.toLowerCase().indexOf('torrentio') !== -1) ? 10 : 0;
+                        return score(b) - score(a);
+                    });
+
+                    if (unique.length > 0) {
+                        openStreamModal(unique, logs, true);
+                        btn.textContent = 'Found ' + unique.length;
+                    } else {
+                        btn.textContent = 'No Links';
+                        setTimeout(() => btn.textContent = originalText, 3000);
+                    }
+            }
+        }
+
+        function openStreamModal(streams, logs = [], copyMode = false) {
+            const modal = document.getElementById('streamSelectionModal');
+            const list = document.getElementById('streamList');
+            list.innerHTML = '';
+            
+            document.querySelector('#streamSelectionModal h2').textContent = `Select Stream (${streams.length})`;
+
+            if (streams.length === 0) {
+                 let logHtml = logs.length > 0 ? `<div style="text-align:left; background:#111; color:#aaa; font-family:monospace; padding:10px; margin-top:20px; font-size:0.8em; border-radius:5px; max-height:200px; overflow-y:auto;"><strong>Scan Log:</strong><br>${logs.join('<br>')}</div>` : '';
+                list.innerHTML = `
+                    <div style="padding:20px; text-align: center; color: #ccc;">
+                        <p>No verified streams found.</p>
+                        ${logHtml}
+                    </div>`;
+            } else {
+                streams.forEach(s => {
+                    const a = document.createElement('a');
+                    const name = (s.name || '').toLowerCase();
+                    const source = (s.source || '').toLowerCase();
+                    const isTorrentio = source.includes('torrentio');
+                    
+                    a.className = 'stream-btn';
+                    
+                    // Determine Link URL (Reconstruct Magnet if needed)
+                    let linkUrl = s.url;
+                    if (!linkUrl && s.infoHash) {
+                        linkUrl = `magnet:?xt=urn:btih:${s.infoHash}&dn=${encodeURIComponent(s.name || 'Stream')}`;
+                    }
+                    
+                    if (copyMode) {
+                        a.href = '#';
+                        a.onclick = (e) => {
+                            e.preventDefault();
+                            if (linkUrl) {
+                                copyToClipboard(linkUrl);
+                            } else {
+                                alert('No link available.');
+                            }
+                        };
+                         a.innerHTML = `
+                            <div style="flex:1">
+                                <div style="font-weight:bold; color: ${isTorrentio ? '#00b7ff' : 'white'};">${s.name || 'Stream'} 📋</div>
+                                <div style="font-size: 0.8em; color: #aaa;">${s.title || ''}</div>
+                                 <div style="font-size: 0.7em; color: #666; margin-top:2px;">Source: ${s.source || 'Unknown'}</div>
+                            </div>
+                            <div style="font-size: 1.2rem;">📋</div>
+                        `;
+                    } else {
+                        a.href = linkUrl || '#';
+                        a.target = '_blank';
+                        a.innerHTML = `
+                            <div style="flex:1">
+                                <div style="font-weight:bold; color: ${isTorrentio ? '#00b7ff' : 'white'};">${s.name || 'Stream'}</div>
+                                <div style="font-size: 0.8em; color: #aaa;">${s.title || ''}</div>
+                                 <div style="font-size: 0.7em; color: #666; margin-top:2px;">Source: ${s.source || 'Unknown'}</div>
+                            </div>
+                            <div style="font-size: 1.2rem;">▶</div>
+                        `;
+                    }
+
+                    a.style.borderLeft = isTorrentio ? '4px solid #00b7ff' : '4px solid #555';
+                    if (isTorrentio) a.style.background = 'rgba(0, 183, 255, 0.05)';
+                    
+                    a.style.justifyContent = 'space-between';
+                    list.appendChild(a);
+                });
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeStreamModal() {
+            document.getElementById('streamSelectionModal').classList.remove('active');
+        }
+
+        // AUTO-LOGIN CONFIG
+        const AUTO_CREDS = {
+            email: 'massaro.alessandro99@gmail.com',
+            password: 'alessandro2005'
+        };
+
+        // Auto-Login Function
+        async function autoLogin() {
+             if (storage.getItem('stremio_authKey')) {
+                authKey = storage.getItem('stremio_authKey');
+                return;
+            }
+            try {
+                const res = await fetch('https://api.strem.io/api/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email: AUTO_CREDS.email, password: AUTO_CREDS.password, type: 'Auth' })
+                });
+                const data = await res.json();
+                if (data.result && data.result.authKey) {
+                    storage.setItem('stremio_authKey', data.result.authKey);
+                    authKey = data.result.authKey;
+                }
+            } catch (e) { console.error(e); }
+        }
+        
+        // Run on load
+        autoLogin();
+        
+        // ... (manual Auth removed/hidden)
+        function openAccountModal() { document.getElementById('accountModal').classList.add('active'); }
+        function closeAccountModal() { document.getElementById('accountModal').classList.remove('active'); }
+        function closeModal() { document.getElementById('modal').classList.remove('active'); }
+        async function doLogin() {
+            const email = document.getElementById('stremioEmail').value;
+            const password = document.getElementById('stremioPassword').value;
+
+            try {
+                const res = await fetch('https://api.strem.io/api/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password, type: 'Auth' })
+                });
+
+                const data = await res.json();
+                if (data.result && data.result.authKey) {
+                    storage.setItem('stremio_authKey', data.result.authKey);
+                    document.getElementById('tokenResult').textContent = 'Success! Token Saved.';
+                    authKey = data.result.authKey;
+                } else {
+                    document.getElementById('tokenResult').textContent = 'Failed: ' + (data.error || 'Unknown');
+                }
+            } catch (e) {
+                document.getElementById('tokenResult').textContent = 'Error: ' + e.message;
+            }
+        } 
+    </script>
+
+</body>
+
+</html>
+```
